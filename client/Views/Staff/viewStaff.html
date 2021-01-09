@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>View Staff</title>
+        <link
+            rel="stylesheet"
+            href="../../lib/font-awesome/fontawesome-free-5.15.1-web/css/all.css"
+        />
+
+        <link rel="stylesheet" href="../../CSS/style.css" />
+        <script>
+              fetchDataIntoTable=(data1)=>{
+                let data=data1.account;
+                let table = document.getElementById("all_staff");
+                for(let i=0;i<data.length;i++){
+                    let row =table.insertRow(i+1);
+                    let cellCustomerName=row.insertCell(0);
+                    let cellEmail=row.insertCell(1);
+                    let cellPosition=row.insertCell(2);
+                    let cellAction=row.insertCell(3);
+                    cellCustomerName.innerHTML=(data[i].username);
+                    cellEmail.innerHTML=(data[i].username)+"@hotel.com";
+                    cellPosition.innerHTML=((data[i].role==="1")?"Manager":"Employee");
+                    cellAction.insertAdjacentHTML("beforeend",'<i class="fa fa-list" style="padding-right:5px;" aria-hidden="true" ></i>');
+                    cellAction.insertAdjacentHTML("beforeend",'<i class="fa fa-edit" style="padding-right:5px;"  ></i>');
+                    cellAction.insertAdjacentHTML("beforeend",'<i class="fa fa-trash"  ></i>');
+                }
+              }
+             getData=()=>{
+                document.getElementById("user-name").innerHTML=localStorage.getItem("name");
+                document.getElementById("user-name1").innerHTML=localStorage.getItem("name");
+                if(localStorage.getItem("role")!=="1"){
+
+                    document.getElementById("admin").remove();
+                    document.getElementById("admin1").remove();
+                }
+                let url = "http://localhost:8080/WebProject_war/admin";
+                let authToken =localStorage.getItem("token");
+                myHeaders = new Headers();
+                myHeaders.append('Content-Type', 'application/json');
+                myHeaders.append('Authorization', authToken);
+                myHeaders.append('Accept', '*/*');
+                fetch(url, {
+                    method: 'get',
+                    mode: 'cors',
+                    cache: 'default',
+                    headers: myHeaders,
+                })
+                // .then(data => data.json())
+                .then(response=>response.json() ) //Chuyen response ve dinh dang de co the doc duoc data: https://stackoverflow.com/questions/54656223/fetch-function-return-promise-pending/54656340
+                .then(data => {
+                    console.log(data);
+                    fetchDataIntoTable(data);
+                })
+                .catch((err) => {
+                    console.log(err)
+                    alert("Bạn không có quyền truy cập trang web này!");
+                })
+            }
+        </script>
+    </head>
+    <body onload="getData()">
+        <div id="myNav" class="overlay">
+            <a href="javascript:void(0)" class="closebtn" onclick="closeNav()"
+                >&times;</a
+            >
+            <div class="overlay-content">
+                <a href="../Booking/viewBooking.html">View Booking</a>
+                <a href="../Booking/newBooking.html">New Booking</a>
+                <a href="../Booking/editBooking.html">Edit Booking</a>
+
+                <a href="../Room/viewRoom.html">View Room</a>
+                <a href="../Room/newRoom.html">New Room</a>
+                <a href="../Room/editRoom.html">Edit Room</a>
+
+                <a href="viewStaff.html">View Staff</a>
+                <a href="newStaff.html">New Staff</a>
+                <a href="editStaff.html">Edit Staff</a>
+            </div>
+        </div>
+
+        <div id="page-wrapper">
+            <div class="page-header">
+                <div class="page-logo">
+                    <img src="../../Img/logo.png" alt="logo" />
+                    <span>HVC</span>
+                </div>
+
+                <div class="bars menu-togger sidebar-togger">
+                    <i class="fas fa-bars" onclick="openNav()"></i>
+                </div>
+                <form class="search-form">
+                    <input type="text" placeholder="Search..." name="query" />
+                </form>
+                <div class="top-menu">
+                    <ul class="list-top">
+                        <li class="noti">
+                            <i class="far fa-bell"></i>
+                        </li>
+                        <li class="messages">
+                            <i class="far fa-envelope"></i>
+                        </li>
+                        <li class="user">
+                            <img src="../../Img/dp.jpg" alt="anh" />
+                            <span id="user-name1">Chuong</span>
+                            <i class="fas fa-caret-down dropdown-btn"></i>
+
+                            <button>
+                                <a href="../login.html">Đăng xuất</a>
+                            </button>
+                        </li>
+
+                        <li class="setting">
+                            <i class="fas fa-cog"></i>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <div class="header-inner"></div>
+            <div class="page-container">
+                <div class="menu-left">
+                    <div class="user-panel">
+                        <div class="user-pic">
+                            <img src="../../Img/dp.jpg" alt="user-pic" />
+                        </div>
+                        <div class="user-name" id="user-name">Chuong Hoang</div>
+                        <div class="user-job">Manager</div>
+                        <div class="user-extend">
+                            <i class="far fa-user"></i>
+                            <i class="far fa-envelope"></i>
+                            <i class="far fa-comments"></i>
+                            <i class="fas fa-sign-out-alt"></i>
+                        </div>
+                    </div>
+
+                    <div class="menu-heading">
+                        <span> -- Main</span>
+                    </div>
+
+                    <div class="list-menu">
+                        <a href="../index.html" class="list-parent">
+                            <i class="fas fa-tachometer-alt"></i>
+                            <span>Dashboard</span>
+                        </a>
+
+                        <li class="list-parent dropdown-btn">
+                            <i class="fas fa-life-ring left"></i>
+                            <span>Books</span>
+                            <i class="fas fa-caret-down down"></i>
+                        </li>
+
+                        <div class="dropdown-container">
+                            <a href="../Booking/viewBooking.html"
+                                >Booking Management</a
+                            >
+                            <a href="../Booking/newBooking.html">New Booking</a>
+                            >
+                        </div>
+
+                        <li class="list-parent dropdown-btn">
+                            <i class="fas fa-hospital-alt"></i>
+                            <span>Rooms</span>
+                            <i class="fas fa-caret-down"></i>
+                        </li>
+
+                        <div class="dropdown-container">
+                            <a href="../Room/viewRoom.html">View Room</a>
+                            <a href="../Room/newRoom.html">New Room</a>
+                            <a href="../Room/editRoom.html">Edit Room</a>
+                        </div>
+
+                        <li class="list-parent dropdown-btn" id="admin1">
+                            <i class="fas fa-users"></i>
+                            <span>Staff</span>
+                            <i class="fas fa-caret-down"></i>
+                        </li>
+
+                        <div class="dropdown-container">
+                            <a id="admin">View Staff</a>
+                            <a href="newStaff.html">New Staff</a>
+                            <a href="editStaff.html">Edit Staff</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="page-content">
+                    <div class="page-bar">
+                        <div class="page-title">All Staff</div>
+                    </div>
+                    <div class="car-box">
+                        <div class="type-view">
+                            <a href="#" class="nav-show-list">List Staff</a>
+                        </div>
+                    </div>
+
+                    <div class="table-content">
+                        <div class="card-header">
+                            <div class="left-card">
+                                <form action="">
+                                    <label for="length_staff">show</label>
+                                    <select
+                                        name="length_staff"
+                                        id="length_staff"
+                                    >
+                                        <option value="5">5</option>
+                                        <option value="10">10</option>
+                                        <option value="15">15</option>
+                                        <option value="20">20</option>
+                                        <option value="25">25</option>
+                                        <option value="30">30</option>
+                                    </select>
+                                </form>
+                            </div>
+
+                            <div class="right-card">
+                                <form action="">
+                                    <label for="search_staff">Search</label>
+                                    <input type="text" class="search-staff" />
+                                </form>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <table id="all_staff">
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Email</th>
+                                    <th>Position</th>
+                                    <th>Action</th>
+                                </tr>
+                                
+                                
+                               
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="page-footer"></div>
+
+            <script src="../../Script/scripts.js"></script>
+        </div>
+    </body>
+</html>

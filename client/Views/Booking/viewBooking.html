@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>View Booking</title>
+        <link
+            rel="stylesheet"
+            href="../../lib/font-awesome/fontawesome-free-5.15.1-web/css/all.css"
+        />
+        <link rel="stylesheet" href="../../CSS/style.css" />
+       
+        <link rel="stylesheet" href="../../CSS/popup.css" />
+        <link rel="stylesheet" href="../../CSS/dialog.css">
+        <script>
+            save=()=>{
+                let start = document.getElementById("ed-end").value; 
+                let end = document.getElementById("ed-start").value;  
+                let oldStart =document.getElementById("hidden-start").innerHTML;
+                let oldEnd =document.getElementById("hidden-end").innerHTML;
+                let room =document.getElementById("ed-room").value;   
+                let data={
+                    id_room:room,
+                    start:oldStart,
+                    expire:oldEnd,
+                    newStart:start,
+                    newExpire:end
+                }
+                let url = "http://localhost:8080/WebProject_war/book";
+                myHeaders = new Headers();
+                let authToken =localStorage.getItem("token");
+                myHeaders = new Headers();
+                myHeaders.append('Content-Type', 'application/json');
+                myHeaders.append('Authorization', authToken);
+                myHeaders.append('Accept', '*/*');
+                fetch(url, {
+                    method: 'put',
+                    headers: myHeaders,
+                    mode: 'cors',
+                    cache: 'default',
+                    body:JSON.stringify(data)
+                })
+                .then(response=>response.json() ) //Chuyen response ve dinh dang de co the doc duoc data: https://stackoverflow.com/questions/54656223/fetch-function-return-promise-pending/54656340
+                .then(data => {
+                    console.log(data)
+                    location.reload();
+                })
+                .catch(err => {
+                    alert("Chỉnh sửa thông tin thất bại!!")
+                    console.log(err);
+                    location.reload();
+                    }                    
+                )    
+                return false;                         
+            }
+            processFetch=(data1,row)=>{
+                let data =data1.bookingDisplayList[row];
+                document.getElementById("f1").value=data.customer.name_customer;
+                document.getElementById("f2").value=data.customer.age;
+                document.getElementById("f3").value=data.customer.phone;
+                document.getElementById("f4").value=data.customer.noid;
+                document.getElementById("f5").value=data.customer.note;
+                document.getElementById("f6").value=data.account.username;
+                document.getElementById("ed-room").value=data.booking.id_room;
+                
+                let cellStartDate=document.getElementById("ed-start");
+                let cellEndDate=document.getElementById("ed-end");
+                let startDate= new Date(data.booking.start);
+                    let d= startDate.getDate(startDate),
+                        month=startDate.getMonth()+1,
+                        year=startDate.getFullYear(),
+                        hour =startDate.getHours(),
+                        minute=startDate.getMinutes();
+                    cellStartDate.value=(year+'-'+month+'-'+d);
+                    document.getElementById("hidden-start").innerHTML=(year+'-'+month+'-'+d);
+                    let endDate=new Date(data.booking.expire);
+                    d= endDate.getDate(data.booking.expire);
+                        month=endDate.getMonth()+1;
+                        year=endDate.getFullYear();
+                        hour =endDate.getHours();
+                        minute=endDate.getMinutes();
+                    cellEndDate.value=(year+'-'+month+'-'+d);
+                    document.getElementById("hidden-end").innerHTML=(year+'-'+month+'-'+d);
+            }
+            fetchDataIntoModal=(row)=>{
+                let url = "http://localhost:8080/WebProject_war/book?size=10&page=1";
+                let authToken =localStorage.getItem("token");
+                myHeaders = new Headers();
+                myHeaders.append('Content-Type', 'application/json');
+                myHeaders.append('Authorization', authToken);
+                myHeaders.append('Accept', '*/*');
+                fetch(url, {
+                    method: 'get',
+                    mode: 'cors',
+                    cache: 'default',
+                    headers: myHeaders,
+                })
+                // .then(data => data.json())
+                .then(response=>response.json() ) //Chuyen response ve dinh dang de co the doc duoc data: https://stackoverflow.com/questions/54656223/fetch-function-return-promise-pending/54656340
+                .then(data1 => {
+                    processFetch(data1,row);
+                })
+                .catch((err) => {
+                    
+                })
+            }
+            openConfirmBox=(row)=>{
+                if (window.confirm("Do you really want to delete this booking?")) {
+                    let table=document.getElementById("all_booking_set");
+                    let rows =table.getElementsByTagName("tr");   
+                    let selectedRow=rows[row+1]; 
+                    let room = selectedRow.cells[1].innerHTML;
+                    let from = selectedRow.cells[2].innerHTML;
+                    let to   = selectedRow.cells[3].innerHTML;
+                    let body = {
+                        id_room:room,
+                        start: from,
+                        expire: to
+                    }
+                    //goi api
+                    let url = "http://localhost:8080/WebProject_war/book";
+                    myHeaders = new Headers();
+                    let authToken =localStorage.getItem("token");
+                    myHeaders = new Headers();
+                    myHeaders.append('Content-Type', 'application/json');
+                    myHeaders.append('Authorization', authToken);
+                    myHeaders.append('Accept', '*/*');
+            
+                    fetch(url, {
+                        method: 'delete',
+                        headers: myHeaders,
+                        mode: 'cors',
+                        cache: 'default',
+                        body: JSON.stringify(body)
+                    })
+                    .then(response=>response.json() ) //Chuyen response ve dinh dang de co the doc duoc data: https://stackoverflow.com/questions/54656223/fetch-function-return-promise-pending/54656340
+                    .then(data => {
+                        if(data==true){
+                            location.reload();
+                        }
+                    })
+                    .catch(err => {
+                        err.json();
+                        console.log(err);
+                    }                        
+                    )      
+                }
+               
+            }
+            fetchDataIntoTable=(data1)=>{
+                let data=data1.bookingDisplayList;
+                let table = document.getElementById("all_booking_set");
+                for(let i=0;i<data.length;i++){
+                    let row =table.insertRow(i+1);
+                    let cellCustomerName=row.insertCell(0);
+                    let cellRoomName=row.insertCell(1);
+                    let cellStartDate=row.insertCell(2);
+                    let cellEndDate=row.insertCell(3);
+                    let cellPhoneNumber=row.insertCell(4);
+                    let cellStaffName=row.insertCell(5);
+                    let cellAction=row.insertCell(6);
+                    cellCustomerName.innerHTML=(data[i].customer.name_customer);
+                    cellRoomName.innerHTML=(data[i].booking.id_room);
+                    let startDate= new Date(data[i].booking.start);
+                    let d= startDate.getDate(startDate),
+                        month=startDate.getMonth()+1,
+                        year=startDate.getFullYear(),
+                        hour =startDate.getHours(),
+                        minute=startDate.getMinutes();
+                    cellStartDate.innerHTML=(year+'-'+month+'-'+d);
+                    let endDate=new Date(data[i].booking.expire);
+                    d= endDate.getDate(data[i].booking.expire);
+                        month=endDate.getMonth()+1;
+                        year=endDate.getFullYear();
+                        hour =endDate.getHours();
+                        minute=endDate.getMinutes();
+                    cellEndDate.innerHTML=(year+'-'+month+'-'+d);
+                    cellPhoneNumber.innerHTML=data[i].customer.phone;
+                    cellStaffName.innerHTML=(data[i].account.username);
+                    cellAction.insertAdjacentHTML("beforeend",'<i class="fa fa-list" style="padding-right:5px;" aria-hidden="true" ></i>');
+                    cellAction.insertAdjacentHTML("beforeend",'<i class="fa fa-edit" style="padding-right:5px;"  onclick ="handleModal('+i+')" ></i>');
+                    cellAction.insertAdjacentHTML("beforeend",'<i class="fa fa-trash" onclick="openConfirmBox('+i+')" ></i>');
+                }
+            }
+
+            getData=()=>{
+                document.getElementById("user-name").innerHTML=localStorage.getItem("name");
+                document.getElementById("user-name1").innerHTML=localStorage.getItem("name");
+                if(localStorage.getItem("role")!=="1"){
+                    document.getElementById("position").innerHTML="Employee";
+                    
+                    document.getElementById("admin").remove();
+                    document.getElementById("admin1").remove();
+                }
+                let url = "http://localhost:8080/WebProject_war/book?size=10&page=1";
+                let authToken =localStorage.getItem("token");
+                myHeaders = new Headers();
+                myHeaders.append('Content-Type', 'application/json');
+                myHeaders.append('Authorization', authToken);
+                myHeaders.append('Accept', '*/*');
+                fetch(url, {
+                    method: 'get',
+                    mode: 'cors',
+                    cache: 'default',
+                    headers: myHeaders,
+                })
+                // .then(data => data.json())
+                .then(response=>response.json() ) //Chuyen response ve dinh dang de co the doc duoc data: https://stackoverflow.com/questions/54656223/fetch-function-return-promise-pending/54656340
+                .then(data1 => {
+                    fetchDataIntoTable(data1);
+                })
+                .catch((err) => {
+                    console.log(err);
+                })
+            }
+        </script>
+    </head>
+    <body onload="getData()">
+
+        <div id="myNav" class="overlay">
+            <a href="javascript:void(0)" class="closebtn" onclick="closeNav()"
+                >&times;</a
+            >
+            <div class="overlay-content">
+                <a href="viewBooking.html">View Booking</a>
+                <a href="newBooking.html">New Booking</a>
+                <a href="editBooking.html">Edit Booking</a>
+
+                <a href="../Room/viewRoom.html">View Room</a>
+                <a href="../Room/newRoom.html">New Room</a>
+                <a href="../Room/editRoom.html">Edit Room</a>
+
+                <a href="../Staff/viewStaff.html">View Staff</a>
+                <a href="../Staff/newStaff.html">New Staff</a>
+                <a href="../Staff/editStaff.html">Edit Staff</a>
+            </div>
+        </div>
+
+
+
+        <div id="page-wrapper">
+            <div class="page-header">
+                <div class="page-logo">
+                    <img src="../../Img/logo.png" alt="logo" />
+                    <span>HVC</span>
+                </div>
+
+                <div class="bars menu-togger sidebar-togger">
+                    <i class="fas fa-bars" onclick="openNav()"></i>
+                </div>
+                <form class="search-form">
+                    <input type="text" placeholder="Search..." name="query" />
+                </form>
+                <div class="top-menu">
+                    <ul class="list-top">
+                        <li class="noti">
+                            <i class="far fa-bell"></i>
+                        </li>
+                        <li class="messages">
+                            <i class="far fa-envelope"></i>
+                        </li>
+                        <li class="user">
+                            <img src="../../Img/dp.jpg" alt="anh" />
+                            <span id="user-name1"></span>
+                            <i class="fas fa-caret-down dropdown-btn"></i>
+
+                            <button>
+                                <a href="../login.html">Đăng xuất</a>
+                            </button>
+                        </li>
+
+                        <li class="setting">
+                            <i class="fas fa-cog"></i>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <div class="header-inner"></div>
+            <div class="page-container">
+                <div class="menu-left">
+                    <div class="user-panel">
+                        <div class="user-pic">
+                            <img src="../../Img/dp.jpg" alt="user-pic" />
+                        </div>
+                        <div class="user-name" id="user-name"></div>
+                        <div class="user-job" id="position">Manager</div>
+                        <div class="user-extend">
+                            <i class="far fa-user"></i>
+                            <i class="far fa-envelope"></i>
+                            <i class="far fa-comments"></i>
+                            <i class="fas fa-sign-out-alt"></i>
+                        </div>
+                    </div>
+
+                    <div class="menu-heading">
+                        <span> -- Main</span>
+                    </div>
+
+                    <div class="list-menu">
+                        <a href="../index.html" class="list-parent">
+                            <i class="fas fa-tachometer-alt"></i>
+                            <span>Dashboard</span>
+                        </a>
+
+                        <li class="list-parent dropdown-btn">
+                            <i class="fas fa-life-ring left"></i>
+                            <span>Books</span>
+                            <i class="fas fa-caret-down down"></i>
+                        </li>
+
+                        <div class="dropdown-container">
+                            <a href="viewBooking.html">Booking Management</a>
+                            <a href="newBooking.html">New Booking</a>
+                        </div>
+
+                        <li class="list-parent dropdown-btn">
+                            <i class="fas fa-hospital-alt"></i>
+                            <span>Rooms</span>
+                            <i class="fas fa-caret-down"></i>
+                        </li>
+
+                        <div class="dropdown-container">
+                            <a href="../Room/viewRoom.html">View Room</a>
+                            <a href="../Room/newRoom.html">New Room</a>
+                            <a href="../Room/editRoom.html">Edit Room</a>
+                        </div>
+
+                        <li class="list-parent dropdown-btn" id="admin1">
+                            <i class="fas fa-users"></i>
+                            <span>Staff</span>
+                            <i class="fas fa-caret-down"></i>
+                        </li>
+
+                        <div class="dropdown-container" id="admin">
+                            <a href="../Staff/viewStaff.html">View Staff</a>
+                            <a href="../Staff/newStaff.html">New Staff</a>
+                            <a href="../Staff/editStaff.html">Edit Staff</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="page-content">
+                    <div class="page-bar">
+                        <div class="page-title">All Booking</div>
+                    </div>
+                    <div class="car-box">
+                        <div class="type-view">
+                            <a href="#" class="nav-show-list">List Book</a>
+                        </div>
+                    </div>
+
+                    <div class="table-content">
+                        <div class="card-header">
+                            <div class="left-card">
+                                <form action="">
+                                    <label for="length_staff">show</label>
+                                    <select
+                                        name="length_staff"
+                                        id="length_staff"
+                                    >
+                                        <option value="5">5</option>
+                                        <option value="10">10</option>
+                                        <option value="15">15</option>
+                                        <option value="20">20</option>
+                                        <option value="25">25</option>
+                                        <option value="30">30</option>
+                                    </select>
+                                </form>
+                            </div>
+
+                            <div class="right-card">
+                                <form action="">
+                                    <label for="search_staff">Search</label>
+                                    <input type="text" class="search-staff" />
+                                </form>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <table id="all_booking_set" class="styled-table">
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Room</th>
+                                    <th>Start</th>
+                                    <th>End</th>
+                                    <th>Mobile</th>
+                                    <th>Staff</th>
+                                    <th>Action</th>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="myModalDetail" class="modal">
+                <div class="modal-content">
+                    <span class="close">&times;</span>
+                    <h2>Booking Detail</h2>
+                    <div class="info-content">                        
+                        <div class="left-container">
+                            <form onsubmit="save()">
+                                <ul class="form-style-1">
+                                    <li><label>Customer Name<span class="required">*</span></label><input type="text" name="field1" class="field-divided" placeholder="Name" id="f1" /> </li>
+                                    <li><label>Customer Age<span class="required">*</span></label><input type="text" name="field2" class="field-divided" placeholder="Age" id="f2"></li>
+                                    <li><label>Customer Phone<span class="required">*</span></label><input type="text" name="field2" class="field-divided" placeholder="Phone" id="f3" /></li>
+                                    
+                                    <li>
+                                        <label>Customer ID Number<span class="required">*</span></label>
+                                        <input type="text" name="customerName" class="field-long" id="f4"/>
+                                    </li>
+                                    <li>
+                                        <label>Customer note<span class="required">*</span></label>
+                                        <input type="text" name="customerMobile" class="field-long" id="f5"/>
+                                    </li>
+                                    <li>
+                                        <label>Admin<span class="required">*</span></label>
+                                        <input type="text" name="customerMobile" class="field-long" id="f6"/>
+                                    </li>
+                                   
+                                </ul>
+                            </form>
+                        </div>
+                        <div class="right-container" style="padding-left: 5px">
+                            <form onsubmit="return save()">
+                                <ul class="form-style-1">
+                                   
+                                    <li><label>Room<span class="required">*</span></label><input type="text" name="field2" class="field-divided" placeholder="Room" id="ed-room"/></li>
+                                    <li><label>End<span class="required">*</span></label><input type="text" name="field2" class="field-divided" placeholder="End" id="ed-start"/></li>
+                                    <li><label>Start<span class="required">*</span></label><input type="text" name="field2" class="field-divided" placeholder="Start" id="ed-end"/></li>
+                                    <p id="hidden-start" hidden></p>
+                                    <p id="hidden-end" hidden></p>
+                                    
+                                    <li style="float: right; padding-top: 15px;">
+                                        <input type="submit" value="Save" />
+                                    </li>
+                                </ul>
+                            </form>
+                        </div>
+            </div>
+            <div class="page-footer"></div>
+            <script src="../../Script/scripts.js"></script>
+            <script>
+                 document.getElementById('all_booking_set') 
+                    .addEventListener('click', function (item) { 
+
+                        
+                        // To get tr tag  
+                        // In the row where we click 
+                        var row = item.path[1]; 
+                        var row_value = "";                         
+          
+                        // Toggle the highlight 
+                        if (row.classList.contains('hidden-select-row')) 
+                            row.classList.remove('hidden-select-row'); 
+                        else 
+                            row.classList.add('hidden-select-row'); 
+
+                        
+                    }); 
+                
+                handleModal=(row)=>{
+                    fetchDataIntoModal(row);
+                    var span = document.getElementsByClassName("close")[0];
+                    span.onclick = function () {
+                        modal.style.display = "none";
+                    };
+                    var modal = document.getElementById("myModalDetail");
+                    console.log(modal.style.display);
+                    if(modal.style.display==="block"){
+                        modal.style.display = "none";
+                    }
+                    else if(modal.style.display===""){
+                        modal.style.display = "block";
+                    }
+                    else if(modal.style.display==="none"){
+                        modal.style.display = "block";
+                    }
+                }
+            </script>
+        </div>
+    </body>
+</html>

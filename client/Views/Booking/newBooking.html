@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>New Booking</title>
+        <link
+            rel="stylesheet"
+            href="../../lib/font-awesome/fontawesome-free-5.15.1-web/css/all.css"
+        />
+
+        <link rel="stylesheet" href="../../CSS/style.css" />
+       
+        <link rel="stylesheet" href="../../CSS/popup.css" />
+        <link rel="stylesheet" href="../../CSS/dialog.css">
+        <script>
+            sendData=(data)=>{
+                let url = "http://localhost:8080/WebProject_war/book";
+                myHeaders = new Headers();
+                let authToken =localStorage.getItem("token");
+                myHeaders = new Headers();
+                myHeaders.append('Content-Type', 'application/json');
+                myHeaders.append('Authorization', authToken);
+                myHeaders.append('Accept', '*/*');
+                fetch(url, {
+                    method: 'post',
+                    headers: myHeaders,
+                    mode: 'cors',
+                    cache: 'default',
+                    body:JSON.stringify(data)
+                })
+                .then(response=>response.json() ) //Chuyen response ve dinh dang de co the doc duoc data: https://stackoverflow.com/questions/54656223/fetch-function-return-promise-pending/54656340
+                .then(data => {
+                    console.log(data)
+                    location.reload();
+                })
+                .catch(err => {
+                    alert("Đặt phòng thất bại!!")
+                    console.log(err);
+                }
+                    
+                )                
+            }
+            confirmBook=()=>{
+                let customerName =document.getElementById("info-name").value;
+                let customerAge =document.getElementById("info-age").value;
+                let customerId =document.getElementById("info-id").value;
+                let customerPhone=document.getElementById('info-phone').value;
+                let customerNote=document.getElementById('field5').value;
+                let table =document.getElementById('available_room');
+                let from =document.getElementById('startDate').value;
+                let defaultTodayDate =new Date(new Date().getTime() +7*60*60*1000).toISOString().slice(0, 10)
+                    from = (from?from:defaultTodayDate);
+                let to =document.getElementById('endDate').value;
+                let defaultTomorrowDate =new Date(new Date().getTime() + 24 * 60 * 60 * 1000+7*60*60*1000).toISOString().slice(0, 10);
+                    to=(to?to:defaultTomorrowDate); 
+                let roomId =[];
+                let rows =table.getElementsByTagName("tr");
+                for(let i=1;i<rows.length;i++){
+                    if(rows[i].classList.contains("selected-row-table")){
+                        let info = rows[i].cells[0].innerHTML;                
+                        roomId.push(info);
+                    }
+                }
+                let data = {
+                    name_customer:customerName,
+                    age:customerAge,
+                    id_admin:localStorage.getItem("id"),
+                    noid:customerId,
+                    phone:customerPhone,
+                    note:customerNote,
+                    booking:roomId.map(item=>{
+                        return{
+                            id_room: item,
+                            start: from,
+                            end:to
+                        }
+                    })
+                }
+                sendData(data);
+                return false;
+            }
+            handleBookRoomModal=()=>{
+                
+                let table =document.getElementById('available_room');
+                let rows =table.getElementsByTagName("tr");
+                let message="" ;
+                let price=0;
+                for(let i=1;i<rows.length;i++){
+                    if(rows[i].classList.contains("selected-row-table")){
+                        let info = ("Phòng "+rows[i].cells[0].innerHTML)+" : "+(rows[i].cells[2].innerHTML+ ",");                    
+                        message=message+info;
+                        let cost = reversePriceFormat(rows[i].cells[4].innerHTML);
+                        console.log("cost",cost);
+                        price+=cost;
+                    }
+                   
+                }
+                message=message.replaceAll(',','<br>');
+                let node = document.getElementById('fetch-message');
+                while (node.lastElementChild) {
+                    node.removeChild(node.lastElementChild);
+                }
+                    node.insertAdjacentHTML('afterbegin', ('<p class="crawled booked-room">'+message+'</p>'));  
+                let priceNode =document.getElementById('fetch-price');
+                    priceNode.innerHTML=formatMoney(price);  
+                let from =document.getElementById('startDate').value;
+                let defaultTodayDate =new Date(new Date().getTime() +7*60*60*1000).toISOString().slice(0, 10)
+                    from = (from?from:defaultTodayDate);
+                let to =document.getElementById('endDate').value;
+                let defaultTomorrowDate =new Date(new Date().getTime() + 24 * 60 * 60 * 1000+7*60*60*1000).toISOString().slice(0, 10);
+                    to=(to?to:defaultTomorrowDate);
+                let timeNode =document.getElementById("fetch-time");
+                    timeNode.innerHTML=("Từ "+from+' đến '+to);                
+            }
+            resetTable=()=>{
+                var totalRowCount = 0;
+                var rowCount = 0;
+                var table = document.getElementById("available_room");
+                var rows = table.getElementsByTagName("tr");
+                var pagi =document.getElementById("pagination");
+                while (pagi.firstChild) {
+                    pagi.removeChild(pagi.firstChild);
+                }
+                for (var i = 0; i < rows.length; i++) {
+                    totalRowCount++;
+               }
+               for(let i=1;i<totalRowCount;i++){
+                   table.deleteRow(1);
+               }
+            }
+            reversePriceFormat =(price)=>{
+                //price:₫150,000
+                let str=price.replace("₫",'');
+                str=str.replace(',','');
+                let priceInNumberFormat=parseInt(str);
+                return priceInNumberFormat;             
+            }
+            formatMoney=(price)=>{
+                var formatter = new Intl.NumberFormat('en-US', {
+                    style: 'currency',
+                    currency: 'VND',
+                    });
+
+                    return formatter.format(price); 
+            }
+            getDescribeOfTypeRoom=(type)=>{
+                switch(type) {
+                    case "1":
+                    return "Phòng tiêu chuẩn 1 giường đơn";
+                    case "2":
+                    return "Phòng tiêu chuẩn 2 giường";
+                    case "3":
+                    return "Phòng cao cấp 1 giường đơn";
+                    case "4":
+                    return "Phòng cao cấp 2 giường"
+                    default:
+                    // code block
+                }
+            }
+            changePage=(page)=>{
+                page--;
+                let pagi=document.getElementById("pagination");
+                let listPage=pagi.childNodes;
+                for(let i=0;i<listPage.length;i++){
+                    if(i==page){
+                        listPage[i].classList.add("active");
+                    }
+                    else{
+                        if(listPage[i].classList.contains("active")){
+                            listPage[i].classList.remove("active");
+                        }
+                    }
+                }
+                document.getElementById("display-page").innerHTML="Showing page "+(parseInt(page)+1)+"/"+localStorage.getItem("totalPage");
+                getData(parseInt(page)+1);
+            }
+            fetchDataIntoTable=(rawData)=>
+            {
+                document.getElementById("position").innerHTML="Employee";
+                    document.getElementById("user-name").innerHTML=localStorage.getItem("name");
+                    document.getElementById("user-name1").innerHTML=localStorage.getItem("name");
+                if(localStorage.getItem("role")!=="1"){
+                    document.getElementById("admin").remove();
+                    document.getElementById("admin1").remove();
+                }
+                resetTable();
+                let numPage=parseInt(rawData.numPage);
+                localStorage.setItem("totalPage",numPage);
+                let pagi =document.getElementById("pagination");
+                for(let i=0;i<numPage;i++){
+                    let id="page"+(i+1);
+                    let str ="<a onclick="+"changePage("+(i+1)+")"+">" + (i+1)+"</a>";
+                   pagi.insertAdjacentHTML("beforeend",str);
+                }
+                let data =rawData.roomList;
+                let flag =-1;//check row trong table co phong hong
+                let table = document.getElementById("available_room");
+                for(let i=0;i<data.length;i++){
+                    if(data[i].status_room!=="OK"){
+                        flag=i;
+                    }
+                    let row =table.insertRow(i+1);
+                    let cellRoomName = row.insertCell(0);
+                    let cellRoomType =row.insertCell(1);
+                    let cellDescribe =row.insertCell(2);
+                    let cellAmountBed=row.insertCell(3);
+                    let cellPrice =row.insertCell(4);
+                    cellRoomName.innerHTML=data[i].id_room;
+                    cellRoomType.innerHTML=data[i].typeRoom.name;
+                    cellDescribe.innerHTML=getDescribeOfTypeRoom(data[i].type_room);
+                    cellPrice.innerHTML=formatMoney(data[i].typeRoom.price);
+                    cellAmountBed.innerHTML=data[i].typeRoom.num_bed;
+                }
+                if(flag!==-1){
+                    table.deleteRow(i+1);
+                    flag=-1; //TODO sua tra ve tu server chi lay ok
+                }
+            }     
+            signOut=()=>{
+                localStorage.clear();
+                location.replace("login.html");
+            }
+            getData=(page)=>{
+                let type = parseInt(document.getElementById('type-room').value);;
+                let from =document.getElementById('startDate').value;
+                from = (from?from:'2025-12-30');
+                let to =document.getElementById('endDate').value;
+                to=(to?to:'2025-12-31');
+                page=(page?page:1);
+                let size=document.getElementById('recordsPerPage').value;
+                let url = "http://localhost:8080/WebProject_war/room";
+                url=url+"?"+"type="+type+"&from="+from+"&to="+to+"&size="+size+"&page="+page;
+                myHeaders = new Headers();
+                let authToken =localStorage.getItem("token");
+                myHeaders = new Headers();
+                myHeaders.append('Content-Type', 'application/json');
+                myHeaders.append('Authorization', authToken);
+                myHeaders.append('Accept', '*/*');
+        
+                fetch(url, {
+                    method: 'get',
+                    headers: myHeaders,
+                    mode: 'cors',
+                    cache: 'default',
+                })
+                // .then(data => data.json())
+                .then(response=>response.json() ) //Chuyen response ve dinh dang de co the doc duoc data: https://stackoverflow.com/questions/54656223/fetch-function-return-promise-pending/54656340
+                .then(data => {
+                    fetchDataIntoTable(data);
+                    console.log("11111111",data);
+                })
+                .catch(err => {
+                    err.json();
+                    console.log(err);
+                }
+                    
+                )
+            } 
+        </script>
+    </head>
+    <body onload="getData(1)" >
+
+
+        <div id="myNav" class="overlay">
+            <a href="javascript:void(0)" class="closebtn" onclick="closeNav()"
+                >&times;</a
+            >
+            <div class="overlay-content">
+                <a href="viewBooking.html">View Booking</a>
+                <a href="newBooking.html">New Booking</a>
+                <a href="editBooking.html">Edit Booking</a>
+
+                <a href="../Room/viewRoom.html">View Room</a>
+                <a href="../Room/newRoom.html">New Room</a>
+                <a href="../Room/editRoom.html">Edit Room</a>
+
+                <a href="../Staff/viewStaff.html">View Staff</a>
+                <a href="../Staff/newStaff.html">New Staff</a>
+                <a href="../Staff/editStaff.html">Edit Staff</a>
+            </div>
+        </div>
+
+
+        <div id="page-wrapper">
+            <div class="page-header">
+                <div class="page-logo">
+                    <img src="../../Img/logo.png" alt="logo" />
+                    <span>HVC</span>
+                </div>
+
+                <div class="bars menu-togger sidebar-togger">
+                    <i class="fas fa-bars" onclick="openNav()"></i>
+                </div>
+                <form class="search-form">
+                    <input type="text" placeholder="Search..." name="query" />
+                </form>
+                <div class="top-menu">
+                    <ul class="list-top">
+                        <li class="noti">
+                            <i class="far fa-bell"></i>
+                        </li>
+                        <li class="messages">
+                            <i class="far fa-envelope"></i>
+                        </li>
+                        <li class="user">
+                            <img src="../../Img/dp.jpg" alt="anh" />
+                            <span id="user-name1">Chuong</span>
+                            <i class="fas fa-caret-down dropdown-btn"></i>
+
+                            <button>
+                                <a onclick="signOut()">Đăng xuất</a>
+                            </button>
+                        </li>
+
+                        <li class="setting">
+                            <i class="fas fa-cog"></i>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <div class="header-inner"></div>
+            <div class="page-container">
+                <div class="menu-left">
+                    <div class="user-panel">
+                        <div class="user-pic">
+                            <img src="../../Img/dp.jpg" alt="user-pic" />
+                        </div>
+                        <div class="user-name" id="user-name">Chuong Hoang</div>
+                        <div class="user-job"id="position">Manager</div>
+                        <div class="user-extend">
+                            <i class="far fa-user" ></i>
+                            <i class="far fa-envelope"></i>
+                            <i class="far fa-comments"></i>
+                            <i class="fas fa-sign-out-alt"></i>
+                        </div>
+                    </div>
+
+                    <div class="menu-heading">
+                        <span> -- Main</span>
+                    </div>
+
+                    <div class="list-menu">
+                        <a href="../index.html" class="list-parent">
+                            <i class="fas fa-tachometer-alt"></i>
+                            <span>Dashboard</span>
+                        </a>
+
+                        <li class="list-parent dropdown-btn">
+                            <i class="fas fa-life-ring left"></i>
+                            <span>Books</span>
+                            <i class="fas fa-caret-down down"></i>
+                        </li>
+
+                        <div class="dropdown-container">
+                            <a href="viewBooking.html">Booking management</a>
+                            <a href="newBooking.html">New Booking</a>
+                        </div>
+
+                        <li class="list-parent dropdown-btn">
+                            <i class="fas fa-hospital-alt"></i>
+                            <span>Rooms</span>
+                            <i class="fas fa-caret-down"></i>
+                        </li>
+
+                        <div class="dropdown-container">
+                            <a href="../Room/viewRoom.html">View Room</a>
+                            <a href="../Room/newRoom.html">New Room</a>
+                            <a href="../Room/editRoom.html">Edit Room</a>
+                        </div>
+
+                        <li class="list-parent dropdown-btn" id="admin">
+                            <i class="fas fa-users"></i>
+                            <span>Staff</span>
+                            <i class="fas fa-caret-down"></i>
+                        </li>
+
+                        <div class="dropdown-container" id="admin1">
+                            <a href="viewRoom.html">View Staff</a>
+                            <a href="newRoom.html">New Staff</a>
+                            <a href="editStaff.html">Edit Staff</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="page-content">
+                    <div class="page-bar">
+                        <div class="page-title">New Booking</div>
+                    </div>
+                    <div class="car-box">
+                        <div class="car-search">
+                            <label for="type-room">Type Room:</label>
+                            <select id="type-room" >
+                                <option  value="-1" selected>All</option>
+                                <option  value="1">STD</option>
+                                <option  value="2">SUP</option>
+                                <option  value="3">DLX</option>
+                                <option  value="4">SUI</option>
+                            </select>
+                            <label for="dateofbirth">Start</label>
+                            <input
+                                type="date"
+                                name="dateofbirth"
+                                id="startDate"
+                            />
+                            <label for="dateofbirth">End</label>
+                            <input
+                                type="date"
+                                name="dateofbirth"
+                                id="endDate"
+                            />
+                            <a  onclick="getData(1)" class="nav-show-list">Search</a>
+                        </div>
+                    </div>
+
+                    <div class="table-content">
+                        <div class="card-header" >
+                            <div class="left-card">
+                                <form action="">
+                                    <label for="length_staff">show</label>
+                                    <select
+                                        name="length_staff"
+                                        id="recordsPerPage"
+                                    >
+                                        <option value="5">5</option>
+                                        <option value="10">10</option>
+                                        <option value="15">15</option>
+                                        <option value="20">20</option>
+                                        <option value="25">25</option>
+                                        <option value="30">30</option>
+                                    </select>
+                                    
+                                </form>
+                                <div id="display-page"></div>
+                            </div>
+
+                            <div class="right-card" id="error-no-room-selected" style="color:red">
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <table id="available_room">
+                                <tr>
+                                    <th>Room</th>
+                                    <th>Type</th>
+                                    <th>Describe</th>
+                                    <th>Amount Bed</th>
+                                    <th>Price</th>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="center-paginate">
+                            <div class="pagination" id="pagination">
+                                <a href="#">1</a>
+                                <a href="#" class="active">2</a>
+                                <a href="#">3</a>
+                            </div>
+                        </div>
+                        <button id="open-book-modal" onclick="handleBookRoomModal()">Book</button>
+                        <div id="myModal" class="modal">
+                            <div class="modal-content">
+                                <span class="close">&times;</span>
+                                <h2>Thông tin đặt phòng</h2>
+                                <div class="info-content">
+                                    
+                                    <div class="left-container">
+                                        <form onsubmit="return confirmBook()">
+                                            <ul class="form-style-1">
+                                                <li><label>Tên đầy đủ <span class="required">*</span></label><input type="text" name="field1" class="field-divided" placeholder="Tên" id="info-name" /> </li>
+                                                <li><label>Tuổi<span class="required">*</span></label><input type="text" name="field2" class="field-divided" placeholder="Tuổi" id="info-age" /></li>
+                                                <li>
+                                                    <label>Số CMND<span class="required">*</span></label>
+                                                    <input type="text" name="field3" class="field-long" id="info-id"/>
+                                                    </select>
+                                                </li>
+                                                <li>
+                                                    <label>Số điện thoại <span class="required">*</span></label>
+                                                    <input type="number" name="field3" class="field-long" id="info-phone" />
+                                                </li>
+                                                <li>
+                                                    <label>Ghi chú </label>
+                                                    <input name="field5" id="field5" class="field-long field-textarea" id="info-notifi"></input>
+                                                </li>
+                                                <li>
+                                                    <input type="submit" value="Xác nhận đặt" />
+                                                </li>
+                                            </ul>
+                                            </form>
+                                    </div>
+                                    <div class="right-container">
+                                        <div class="check-out-info">
+                                            <h3 class="check-out-header" >Thông tin phòng đã đặt :</h3>
+                                            <p class="crawled booked-room" id="fetch-message"></p>
+                                            <h3>Thời gian :</h3>
+                                            <p class="crawled booked-time" id="fetch-time"></p>
+                                            <h3>Chi phí ước tính :</h3>
+                                            <p class="crawled booked-estimate-price" id="fetch-price"></p>
+                                            <h4>Lưu ý:</h4>
+                                            <p style="color:red">Chi phí trên chưa bao gồm các phí phát sinh như tiền đồ ăn uống và đồ dùng trong phòng!</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="page-footer"></div>
+            <script type="text/javascript"> 
+  
+                // JavaScript Code to Highlight any 
+                // row in the given table. 
+                document.getElementById('available_room') 
+                    .addEventListener('click', function (item) { 
+
+                        
+                        // To get tr tag  
+                        // In the row where we click 
+                        var row = item.path[1]; 
+                        var row_value = "";                         
+          
+                        // Toggle the highlight 
+                        if (row.classList.contains('selected-row-table')) 
+                            row.classList.remove('selected-row-table'); 
+                        else 
+                            row.classList.add('selected-row-table'); 
+
+                        
+                    }); 
+                    var modal = document.getElementById("myModal");
+
+                    var btn = document.getElementById("open-book-modal");
+
+                    var span = document.getElementsByClassName("close")[0];
+                    
+                    btn.onclick = function () {
+                        let table =document.getElementById('available_room');
+                        let rows =table.getElementsByTagName("tr");   
+                        let check=false ;
+                        for(let i=0;i<rows.length;i++){
+                            if(rows[i].classList.contains('selected-row-table')){
+                                check=true;
+                            }
+                        }    
+                        if(check){
+                            handleBookRoomModal();
+                            modal.style.display = "block";
+                        }
+                        else{
+                            let cautionNode=document.getElementById('error-no-room-selected');
+                            cautionNode.innerHTML="Không thể đặt!!Chưa có phòng nào được chọn!"
+                        }
+                    };
+
+                    span.onclick = function () {
+                        modal.style.display = "none";
+                        let cautionNode=document.getElementById('error-no-room-selected');
+                            cautionNode.innerHTML="";
+                    };
+                    window.onclick = function (event) {
+                        if (event.target == modal) {
+                            modal.style.display = "none";
+                            let cautionNode=document.getElementById('error-no-room-selected');
+                            cautionNode.innerHTML="";
+                        }
+                        
+                    };
+                
+            </script> 
+            <script>
+                
+            </script>
+            <script src="../../Script/scripts.js"></script>
+        </div>
+    </body>
+</html>
